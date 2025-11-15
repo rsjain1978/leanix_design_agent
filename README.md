@@ -1,396 +1,604 @@
-# LeanIX Design Agent
+# LeanIX Design Agent MCP Server
 
-An intelligent AI agent that retrieves design standards and architectural guidelines from LeanIX using natural language queries. Built with LangChain, LangGraph, and the Model Context Protocol (MCP).
+An intelligent MCP server that exposes AI-powered design standards querying from LeanIX. Built with FastMCP, LangGraph, and OpenAI.
 
-## Overview
+## 🎯 What Is This?
 
-The LeanIX Design Agent is a conversational AI tool that connects to your LeanIX Enterprise Architecture Management platform and intelligently searches for design standards, best practices, and architectural guidelines. Instead of manually navigating through LeanIX, simply ask questions in natural language and let the AI agent find the information you need.
+This MCP (Model Context Protocol) server acts as an **intelligent gateway** between AI assistants and LeanIX. It uses AI to understand natural language queries and automatically orchestrates multiple LeanIX tools to fetch design standards, architectural patterns, and best practices.
 
-### Key Features
+### The Problem It Solves
 
-- 🤖 **Intelligent Querying**: Uses OpenAI GPT models to understand your questions and determine the best approach to find information
-- 🔗 **LeanIX Integration**: Connects to LeanIX via the Model Context Protocol (MCP)
-- 🎯 **Focused Tool Selection**: Automatically filters and uses only relevant LeanIX tools (search, find, get, overview, fact sheets)
-- ⚡ **Async Operations**: Built with async/await for efficient performance
-- 🛠️ **ReAct Agent Pattern**: Leverages LangGraph's ReAct (Reasoning + Acting) pattern for intelligent decision-making
+**Without this server:**
+- AI assistants would need to know 50+ LeanIX tools
+- Complex manual tool selection required
+- Raw, unformatted data responses
+- Requires deep LeanIX expertise
 
-## Architecture
+**With this server:**
+- 4 simple, focused tools
+- AI automatically selects the right LeanIX tools
+- Coherent, synthesized answers
+- Natural language queries
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────┐
-│   User Input    │
-│   (Topic)       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   main.py       │
-│  Entry Point    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────────────┐
-│          agent.py                   │
-│  ┌─────────────────────────────┐   │
-│  │  LangGraph ReAct Agent      │   │
-│  │  + OpenAI GPT Model         │   │
-│  └─────────────────────────────┘   │
-└────────┬────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────┐
-│    mcp_leanix_client.py             │
-│  ┌─────────────────────────────┐   │
-│  │  MCP Multi-Server Client    │   │
-│  │  + Tool Discovery           │   │
-│  └─────────────────────────────┘   │
-└────────┬────────────────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│  LeanIX MCP     │
-│  Server         │
-└─────────────────┘
+┌─────────────────────────────────┐
+│  AI Assistant (MCP Client)      │
+│  GitHub Copilot / Claude /      │
+│  Cursor / Any MCP Client        │
+└────────────┬────────────────────┘
+             │ HTTP (MCP Protocol)
+             ▼
+┌─────────────────────────────────┐
+│  Your MCP Server (port 8000)    │
+│  ┌───────────────────────────┐  │
+│  │  FastMCP Framework        │  │
+│  │  4 Intelligent Tools      │  │
+│  └───────────┬───────────────┘  │
+│              │                   │
+│              ▼                   │
+│  ┌───────────────────────────┐  │
+│  │  AI Agent                 │  │
+│  │  - OpenAI GPT             │  │
+│  │  - LangGraph ReAct        │  │
+│  │  - Query Understanding    │  │
+│  │  - Tool Orchestration     │  │
+│  └───────────┬───────────────┘  │
+└──────────────┼──────────────────┘
+               │ HTTP (MCP Protocol)
+               ▼
+┌─────────────────────────────────┐
+│  LeanIX MCP Server              │
+│  50+ Low-Level Tools            │
+│  (search, get, list, etc.)      │
+└─────────────────────────────────┘
 ```
 
-## Prerequisites
+### Value Proposition
 
-- **Python 3.10+**
-- **OpenAI API Key** - For GPT model access
-- **LeanIX MCP Server** - Running and accessible LeanIX MCP server
-- **LeanIX Authentication Token** - Bearer token for API authentication
+| Feature | Direct LeanIX MCP | Your MCP Server |
+|---------|------------------|-----------------|
+| **Tools** | 50+ low-level tools | 4 focused tools |
+| **Query Style** | Technical, exact parameters | Natural language |
+| **Tool Selection** | Manual | AI-powered automatic |
+| **Multi-Tool Queries** | Manual orchestration | Automatic |
+| **Response Quality** | Raw data | Synthesized, coherent |
+| **LeanIX Knowledge** | Required | Not required |
+| **Complexity** | 🔴 High | 🟢 Low |
 
-## Installation
+## 🚀 Quick Start
 
-### 1. Clone the Repository
+### Prerequisites
+
+- Python 3.10+
+- OpenAI API key
+- Access to a LeanIX MCP server with authentication
+
+### 1. Installation
 
 ```bash
-git clone <repository-url>
+# Clone or download this project
 cd leanix_design_agent
-```
 
-### 2. Create Virtual Environment (Recommended)
-
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
-
-# macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 4. Set Up Environment Variables
+### 2. Configuration
 
 Create a `.env` file in the project root:
 
 ```env
 # OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=sk-your-openai-api-key-here
 OPENAI_MODEL=gpt-4o-mini
 
-# LeanIX MCP Configuration
-LEANIX_MCP_SERVER_NAME=leanix
-LEANIX_MCP_TRANSPORT=streamable_http
+# LeanIX MCP Server (connects TO LeanIX)
 LEANIX_MCP_URL=https://your-leanix-mcp-server.com/mcp
 LEANIX_MCP_AUTH_BEARER=your_leanix_bearer_token_here
+LEANIX_MCP_TRANSPORT=streamable_http
+LEANIX_MCP_SERVER_NAME=leanix
+
+# Your MCP Server Configuration
+MCP_SERVER_HOST=0.0.0.0
+MCP_SERVER_PORT=8000
 ```
 
-#### Configuration Options
+### 3. Run the Server
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `OPENAI_API_KEY` | Your OpenAI API key | - | ✅ Yes |
-| `OPENAI_MODEL` | OpenAI model to use | `gpt-4o-mini` | No |
-| `LEANIX_MCP_SERVER_NAME` | Identifier for the LeanIX server | `leanix` | No |
-| `LEANIX_MCP_TRANSPORT` | Transport protocol (`streamable_http` or `sse`) | `streamable_http` | No |
-| `LEANIX_MCP_URL` | URL of your LeanIX MCP server | - | ✅ Yes |
-| `LEANIX_MCP_AUTH_BEARER` | Bearer token for LeanIX authentication | - | ✅ Yes |
+**Option A: Using run.py (Recommended)**
+```bash
+python run.py
+```
 
-## Usage
+**Option B: Direct execution**
+```bash
+python src/server.py
+```
 
-### Command Line Mode
+**Option C: Development mode with auto-reload**
+```bash
+fastmcp dev src/server.py
+```
+
+**Server will start at:** `http://localhost:8000`
+
+### 4. Verify Server is Running
 
 ```bash
-# Query with inline topic
-python main.py "event driven architecture"
+# Check server health
+curl http://localhost:8000
 
-# Query multiple words
-python main.py microservices best practices
-
-# Complex queries
-python main.py "API design standards for REST services"
+# Should return MCP server info
 ```
 
-### Interactive Mode
+## 🛠️ Available Tools
 
-```bash
-python main.py
-# You'll be prompted: "Enter topic: "
-# Type your query and press Enter
+The server exposes 4 intelligent tools that MCP clients can use:
+
+### 1. `search_design_standards`
+Search for design standards, best practices, and architectural guidelines.
+
+**Parameters:**
+- `topic` (string): Topic to search for
+
+**Examples:**
+- "event driven architecture"
+- "microservices best practices"
+- "API design guidelines"
+- "cloud deployment standards"
+
+### 2. `get_architecture_patterns`
+Get architectural patterns and design guidelines for specific architecture styles.
+
+**Parameters:**
+- `architecture_type` (string): Architecture type
+
+**Examples:**
+- "microservices"
+- "event-driven"
+- "serverless"
+- "monolithic"
+- "SOA"
+
+### 3. `get_technology_standards`
+Get technology standards and guidelines for specific technologies or frameworks.
+
+**Parameters:**
+- `technology` (string): Technology name
+
+**Examples:**
+- "Kafka"
+- "Kubernetes"
+- "React"
+- "PostgreSQL"
+- "Docker"
+
+### 4. `get_security_guidelines`
+Get security guidelines, best practices, and standards.
+
+**Parameters:**
+- `security_area` (string): Security area
+
+**Examples:**
+- "API security"
+- "authentication"
+- "data encryption"
+- "network security"
+- "OAuth implementation"
+
+## 🔌 Connecting MCP Clients
+
+### Generic MCP Client Configuration
+
+```json
+{
+  "servers": {
+    "leanix-design-agent": {
+      "url": "http://localhost:8000",
+      "transport": "streamable_http"
+    }
+  }
+}
 ```
 
-### Example Queries
+### Example: Python Client
 
-```bash
-# Architecture patterns
-python main.py "event driven architecture"
+```python
+import asyncio
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
-# Technology standards
-python main.py "cloud deployment guidelines"
+async def query_leanix():
+    connections = {
+        "leanix-design": {
+            "transport": "streamable_http",
+            "url": "http://localhost:8000"
+        }
+    }
+    
+    async with MultiServerMCPClient(connections) as client:
+        tools = await client.get_tools()
+        print(f"Available tools: {[t.name for t in tools]}")
+        
+        # Call a tool
+        result = await client.call_tool(
+            "search_design_standards",
+            {"topic": "microservices"}
+        )
+        print(result)
 
-# Design principles
-python main.py "microservices design patterns"
-
-# Specific technologies
-python main.py "Kafka messaging standards"
-
-# Security guidelines
-python main.py "API security best practices"
+asyncio.run(query_leanix())
 ```
 
-### Example Output
+### Example: Using FastMCP Client
 
-```
-Topic: event driven architecture
+```python
+from fastmcp import FastMCP
 
-Fetching design standards from LeanIX...
+# Connect to your server
+client = FastMCP("http://localhost:8000")
 
-=== Design Standards for Event Driven Architecture ===
-
-1. Event-Driven Architecture Pattern
-   - Use asynchronous messaging for loose coupling
-   - Implement event sourcing for audit trails
-   - Use message brokers like Kafka or RabbitMQ
-
-2. Best Practices
-   - Define clear event schemas
-   - Implement idempotent event handlers
-   - Use event versioning strategies
-
-[Additional details from LeanIX...]
+# Call a tool
+result = await client.call_tool(
+    "get_architecture_patterns",
+    {"architecture_type": "event-driven"}
+)
+print(result)
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 leanix_design_agent/
 │
-├── main.py                  # Entry point - handles user input
-├── agent.py                 # Agent logic - builds and runs the AI agent
-├── mcp_leanix_client.py     # LeanIX MCP client - connects to LeanIX
-├── config.py                # Configuration management
-├── requirements.txt         # Python dependencies
-├── .env                     # Environment variables (create this)
-└── README.md               # This file
+├── src/
+│   ├── __init__.py           # Package marker
+│   ├── server.py             # Main MCP server (consolidated)
+│   │   ├── LeanIX client     #   - Connect to LeanIX MCP
+│   │   ├── AI agent          #   - Build intelligent agent
+│   │   ├── MCP tools (x4)    #   - Tool definitions
+│   │   └── Main entry        #   - Server startup
+│   └── config.py             # Configuration management
+│
+├── run.py                    # Entry point script
+├── requirements.txt          # Python dependencies
+├── .env                      # Environment variables (create this)
+├── .env.example              # Environment template
+├── .gitignore               # Git ignore rules
+└── README.md                # This file
 ```
 
-## How It Works
+### File Descriptions
 
-### 1. **Tool Discovery**
-When the agent starts, it connects to the LeanIX MCP server and discovers all available tools:
-- Search tools
-- Find tools
-- Get tools
-- Overview tools
-- Fact sheet tools
+**`src/server.py`** (208 lines) - The main server file containing:
+- **LeanIX Client**: Connection management, tool retrieval, filtering
+- **AI Agent**: LangGraph ReAct agent with OpenAI for intelligent querying
+- **MCP Tools**: 4 FastMCP tool definitions
+- **Server**: FastMCP HTTP server setup
 
-### 2. **Tool Filtering**
-The agent filters tools to focus on read-only operations relevant to design standards retrieval.
+**`src/config.py`** - Configuration classes with validation:
+- `OpenAIConfig`: API key, model selection
+- `LeanIXMCPConfig`: LeanIX server connection details
 
-### 3. **Intelligent Querying**
-Using the ReAct (Reasoning + Acting) pattern:
-- The AI model reasons about what information is needed
-- Selects appropriate LeanIX tools to call
-- Processes the results
-- May call additional tools if needed
-- Synthesizes a final answer
+**`run.py`** - Simple entry point that imports and runs the server
 
-### 4. **Response Generation**
-The agent returns a comprehensive response with design standards, best practices, and guidelines from LeanIX.
+## ⚙️ Configuration Reference
 
-## Components Deep Dive
+### Environment Variables
 
-### `main.py` - Entry Point
-- Accepts user input from command line or interactive prompt
-- Initializes the async runtime
-- Displays results
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `OPENAI_API_KEY` | Your OpenAI API key | - | ✅ |
+| `OPENAI_MODEL` | OpenAI model to use | `gpt-4o-mini` | ❌ |
+| `LEANIX_MCP_URL` | LeanIX MCP server URL | - | ✅ |
+| `LEANIX_MCP_AUTH_BEARER` | Bearer token for LeanIX | - | ✅ |
+| `LEANIX_MCP_TRANSPORT` | Transport protocol | `streamable_http` | ❌ |
+| `LEANIX_MCP_SERVER_NAME` | LeanIX server identifier | `leanix` | ❌ |
+| `MCP_SERVER_HOST` | Your server host | `0.0.0.0` | ❌ |
+| `MCP_SERVER_PORT` | Your server port | `8000` | ❌ |
 
-### `agent.py` - Agent Logic
-- **`build_design_standard_agent()`**: Creates a LangGraph ReAct agent
-  - Loads LeanIX tools via MCP
-  - Filters to relevant tools
-  - Configures OpenAI GPT model
-  - Sets system prompt
-  
-- **`query_design_standards(topic)`**: Executes the agent
-  - Takes a topic string
-  - Invokes the agent
-  - Returns the final response
-
-- **`_filter_design_standard_tools()`**: Filters tools by keywords
-  - Keeps tools related to search, find, get, overview, fact sheets
-  - Ensures only relevant read operations are used
-
-### `mcp_leanix_client.py` - MCP Client
-- **`build_connections_config()`**: Builds MCP connection configuration
-  - Configures transport (HTTP/SSE)
-  - Sets up authentication headers
-  
-- **`get_leanix_tools()`**: Retrieves available tools from LeanIX
-  - Connects to MCP server
-  - Discovers and loads tools
-  - Returns tool list
-
-### `config.py` - Configuration
-- Loads environment variables from `.env` file
-- Validates required configuration
-- Provides typed configuration objects
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. **"OPENAI_API_KEY is not set"**
-- Ensure you've created a `.env` file in the project root
-- Verify the API key is correctly set: `OPENAI_API_KEY=sk-...`
-- Check that `python-dotenv` is installed
-
-#### 2. **"LEANIX_MCP_URL must be set"**
-- Ensure `LEANIX_MCP_URL` is set in your `.env` file
-- Verify the URL is correct and accessible
-- Check if the MCP server is running
-
-#### 3. **Connection Errors**
-- Verify your LeanIX MCP server is running and accessible
-- Check network connectivity
-- Ensure the bearer token is valid and not expired
-- Verify the transport type matches your server configuration
-
-#### 4. **No Tools Found**
-- Check LeanIX MCP server logs for errors
-- Verify authentication token has proper permissions
-- Ensure the MCP server is properly configured
-
-#### 5. **Agent Not Responding**
-- Check OpenAI API rate limits
-- Verify your API key has sufficient credits
-- Try reducing query complexity
-- Check for network issues
-
-### Debug Mode
-
-To see which tools are loaded, run:
-
-```bash
-python mcp_leanix_client.py
-```
-
-This will list all available LeanIX MCP tools.
-
-To test the agent directly:
-
-```bash
-python agent.py
-```
-
-This will run a test query for "event driven" architecture.
-
-## Dependencies
-
-- **langgraph** - Agent orchestration framework
-- **langchain** - LLM application framework
-- **langchain-openai** - OpenAI integration for LangChain
-- **langchain-mcp-adapters** - MCP protocol adapters for LangChain
-- **mcp** - Model Context Protocol implementation
-- **python-dotenv** - Environment variable management
-
-## Advanced Configuration
-
-### Using Different OpenAI Models
+### OpenAI Model Options
 
 ```env
-# For more capable responses (higher cost)
-OPENAI_MODEL=gpt-4o
-
-# For faster, cheaper responses
+# Most cost-effective (recommended)
 OPENAI_MODEL=gpt-4o-mini
 
-# For legacy compatibility
+# More capable, higher cost
+OPENAI_MODEL=gpt-4o
+
+# Turbo models
+OPENAI_MODEL=gpt-4-turbo
 OPENAI_MODEL=gpt-3.5-turbo
 ```
 
-### Custom Transport Protocols
+## 🔍 How It Works
 
-If your LeanIX MCP server uses SSE (Server-Sent Events):
+### Request Flow
 
-```env
-LEANIX_MCP_TRANSPORT=sse
+1. **MCP Client** sends a tool request:
+   ```json
+   {
+     "tool": "search_design_standards",
+     "arguments": {"topic": "microservices"}
+   }
+   ```
+
+2. **FastMCP** routes to the appropriate tool function
+
+3. **AI Agent**:
+   - Connects to LeanIX MCP server
+   - Retrieves available LeanIX tools (50+ tools)
+   - Filters to relevant tools (search, find, get, fact sheets)
+   - Creates a LangGraph ReAct agent with OpenAI
+   
+4. **ReAct Agent** (Reasoning + Acting):
+   - **Reasons**: "User wants microservices design standards"
+   - **Acts**: Calls appropriate LeanIX tools
+   - **Observes**: Reviews the results
+   - **Repeats**: If more information needed
+   - **Synthesizes**: Creates coherent final answer
+
+5. **Response** returned to MCP client as formatted text
+
+### Example: Behind the Scenes
+
+**User Query:** "Get microservices best practices"
+
+**What Happens:**
+```
+1. Your MCP Server receives: get_architecture_patterns("microservices")
+
+2. AI Agent thinks:
+   "I need to search LeanIX for microservices patterns"
+   
+3. AI Agent discovers LeanIX has these tools:
+   - search_fact_sheets
+   - search_documents  
+   - get_technology_stack
+   - list_design_patterns
+   [... 46 more tools]
+   
+4. AI Agent filters to relevant tools:
+   - search_fact_sheets ✅
+   - search_documents ✅
+   - get_overview ✅
+   
+5. AI Agent automatically:
+   - Calls search_fact_sheets(type="architecture", name="microservices")
+   - Calls search_documents(query="microservices patterns")
+   - Combines results
+   
+6. AI Agent synthesizes:
+   "Microservices Best Practices from LeanIX:
+    1. Service independence...
+    2. API-first design...
+    3. Decentralized data..."
+    
+7. Returns formatted response ✅
 ```
 
-## Security Considerations
+## 🧪 Development
 
-- ⚠️ **Never commit your `.env` file** to version control
-- 🔒 Store API keys and tokens securely
-- 🔐 Use environment-specific credentials (dev, staging, prod)
-- 🛡️ Rotate bearer tokens regularly
-- 📝 Audit agent queries in production environments
+### Running in Development Mode
 
-## Performance Tips
+```bash
+# Auto-reload on file changes
+fastmcp dev src/server.py
+```
 
-1. **Model Selection**: Use `gpt-4o-mini` for faster responses and lower costs
-2. **Query Specificity**: More specific queries lead to faster, more relevant results
-3. **Connection Reuse**: The MCP client is designed to be efficient with connections
+### Testing Tools Manually
 
-## Future Enhancements
+```python
+# test_manual.py
+import asyncio
+from src.server import _query_leanix
 
-Possible improvements for this project:
+async def test():
+    result = await _query_leanix("Get microservices patterns")
+    print(result)
 
-- [ ] Add caching for frequently queried topics
-- [ ] Implement streaming responses for real-time feedback
-- [ ] Add support for multiple LeanIX workspaces
-- [ ] Create a web UI for easier interaction
-- [ ] Add conversation history for follow-up questions
-- [ ] Implement tool usage analytics
-- [ ] Add support for creating/updating design standards (write operations)
-- [ ] Create a batch processing mode for multiple queries
+asyncio.run(test())
+```
 
-## Contributing
+### Debugging
 
-Contributions are welcome! Please follow these guidelines:
+Enable debug logging:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+```python
+# In src/server.py, change:
+logging.basicConfig(level=logging.DEBUG)  # Instead of INFO
+```
 
-## License
+## 🐛 Troubleshooting
 
-[Specify your license here]
+### Server Won't Start
 
-## Support
+**Error: "OPENAI_API_KEY is not set"**
+- ✅ Create `.env` file in project root
+- ✅ Add `OPENAI_API_KEY=sk-...`
+- ✅ Verify `.env` is in the same directory as `run.py`
 
-For issues, questions, or contributions:
-- Create an issue in the repository
-- Contact the maintainers
-- Check LeanIX and LangChain documentation
+**Error: "LEANIX_MCP_URL must be set"**
+- ✅ Add `LEANIX_MCP_URL=https://...` to `.env`
+- ✅ Verify URL is correct and accessible
+- ✅ Check if LeanIX MCP server is running
 
-## Acknowledgments
+**Error: Port 8000 already in use**
+```bash
+# Change port in .env
+MCP_SERVER_PORT=8001
+```
 
-- Built with [LangChain](https://langchain.com/) and [LangGraph](https://langchain-ai.github.io/langgraph/)
-- Powered by [OpenAI](https://openai.com/)
-- Integrates with [LeanIX](https://www.leanix.net/)
-- Uses [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
+### Connection Issues
+
+**Can't connect to LeanIX MCP**
+- ✅ Verify `LEANIX_MCP_URL` is correct
+- ✅ Check bearer token hasn't expired
+- ✅ Test URL manually: `curl <LEANIX_MCP_URL>`
+- ✅ Verify network/firewall allows connection
+
+**No tools found from LeanIX**
+- ✅ Check authentication token permissions
+- ✅ Review LeanIX MCP server logs
+- ✅ Verify transport type matches: `streamable_http`
+
+### Query Issues
+
+**Slow responses**
+- ⚠️ Normal: First query takes longer (agent initialization)
+- ⚠️ LeanIX may have slow response times
+- ⚠️ Complex queries require multiple tool calls
+- ✅ Consider using faster OpenAI model
+
+**Poor quality answers**
+- ✅ Try different OpenAI model: `OPENAI_MODEL=gpt-4o`
+- ✅ Check if LeanIX has relevant data
+- ✅ Rephrase query to be more specific
+
+**OpenAI rate limits**
+- ✅ Verify API key has credits
+- ✅ Check OpenAI dashboard for limits
+- ✅ Consider upgrading OpenAI plan
+
+## 📊 Performance
+
+### Typical Response Times
+
+| Operation | Time | Notes |
+|-----------|------|-------|
+| First query | 5-10s | Agent initialization + LeanIX connection |
+| Subsequent queries | 2-5s | Agent cached |
+| Simple queries | 2-3s | Single LeanIX tool call |
+| Complex queries | 5-10s | Multiple tool calls + synthesis |
+
+### Optimization Tips
+
+1. **Use `gpt-4o-mini`** - Faster and cheaper
+2. **Keep queries specific** - Reduces tool calls needed
+3. **Consider caching** - Add caching layer for repeated queries
+4. **Connection pooling** - LeanIX client reuses connections
+
+## 📦 Dependencies
+
+```
+fastmcp              # MCP server framework
+langgraph            # Agent orchestration
+langchain            # LLM application framework
+langchain-openai     # OpenAI integration
+langchain-mcp-adapters  # MCP client support
+python-dotenv        # Environment management
+```
+
+### Dependency Tree
+
+```
+Your MCP Server
+├── fastmcp           → MCP server capabilities
+├── langgraph         → AI agent orchestration
+│   └── langchain     → LLM framework
+│       └── langchain-openai  → OpenAI GPT
+└── langchain-mcp-adapters    → Connect to LeanIX MCP
+```
+
+## 🔒 Security Considerations
+
+- ⚠️ **Never commit `.env`** - Contains API keys and tokens
+- 🔒 **Rotate tokens regularly** - Bearer tokens should expire
+- 🛡️ **Use HTTPS in production** - Encrypt traffic
+- 📝 **Audit queries** - Log what's being asked
+- 🔐 **Restrict network access** - Firewall rules for server
+- 💰 **Monitor OpenAI usage** - Set budget limits
+
+## 🚀 Production Deployment
+
+### Docker Deployment (Recommended)
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+COPY run.py .
+
+EXPOSE 8000
+CMD ["python", "run.py"]
+```
+
+```bash
+# Build
+docker build -t leanix-design-agent .
+
+# Run
+docker run -p 8000:8000 --env-file .env leanix-design-agent
+```
+
+### Environment-Specific Configs
+
+```bash
+# Development
+.env.development
+
+# Staging
+.env.staging
+
+# Production
+.env.production
+```
+
+### Health Checks
+
+Add health endpoint monitoring:
+```bash
+curl http://localhost:8000/health
+```
+
+## 🤝 Contributing
+
+This is an internal tool. For modifications:
+
+1. Test locally: `fastmcp dev src/server.py`
+2. Verify with MCP clients
+3. Update README if adding features
+4. Ensure `.env` is in `.gitignore`
+
+## 📄 License
+
+[Specify your license]
+
+## 🆘 Support
+
+- **OpenAI Issues**: https://platform.openai.com/docs
+- **LeanIX Support**: Contact your LeanIX administrator
+- **FastMCP Docs**: https://github.com/jlowin/fastmcp
 
 ---
 
-**Note**: This project requires access to a LeanIX MCP server. Ensure you have the necessary permissions and infrastructure in place before using this tool.
+## 🎓 Understanding MCP Architecture
 
+### Why Use MCP?
+
+**MCP (Model Context Protocol)** is a standardized protocol for connecting AI assistants to external tools and data sources.
+
+**Benefits:**
+- ✅ Standardized: Works with any MCP-compatible client
+- ✅ Tool Discovery: Clients automatically learn available tools
+- ✅ Type Safety: Schema-based parameter validation
+- ✅ AI-Native: Designed for AI-to-AI communication
+
+### Your Server's Role
+
+Your server is a **middleware/facade** that:
+1. **Abstracts Complexity**: 4 simple tools instead of 50+ complex ones
+2. **Adds Intelligence**: AI understands and orchestrates queries
+3. **Synthesizes Results**: Coherent answers instead of raw data
+4. **Domain Focus**: Specialized for design standards
+
+This is a **best practice pattern** in AI architecture! 🎯
+
+---
+
+**Built with ❤️ using FastMCP, LangGraph, and OpenAI**

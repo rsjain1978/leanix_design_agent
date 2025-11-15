@@ -2,5 +2,5 @@ langgraph
 langchain
 langchain-openai
 langchain-mcp-adapters
-mcp
+fastmcp
 python-dotenv
